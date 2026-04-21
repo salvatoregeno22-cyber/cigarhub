@@ -696,7 +696,7 @@ const Icon = {
   plus: <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
   search: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
   camera: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M9 6L10.5 3h3L15 6"/></svg>,
-  logo: <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="10" width="16" height="4" rx="2" fill="white" opacity="0.9"/><circle cx="19" cy="12" r="2.5" stroke="white" strokeWidth="1.5"/><path d="M6 8 Q9 6 12 7" stroke="white" strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.6"/><path d="M6 16 Q9 18 12 17" stroke="white" strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.6"/></svg>,
+  logo: <svg viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg"><text x="3" y="25" fontFamily="'Playfair Display', serif" fontSize="22" fontWeight="700" fill="white">C</text><text x="17" y="25" fontFamily="'Playfair Display', serif" fontSize="22" fontWeight="700" fill="black">H</text></svg>,
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
