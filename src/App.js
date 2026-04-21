@@ -1,6 +1,540 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { local, shared, getDeviceId } from './storage';
 
+// ── Cigar Database ────────────────────────────────────────────────────────────
+// Structure: brand -> array of { name, origin, wrapper, vitola (default) }
+// Auto-fills the form when a user selects a known cigar name.
+
+export const CIGAR_DB = {
+  "Arturo Fuente": [
+    { name: "Opus X", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Perfecto" },
+    { name: "Opus X Perfecxion No. 2", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Churchill" },
+    { name: "Opus X Perfecxion No. 5", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Opus X Perfecxion 888", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Lancero" },
+    { name: "Opus X Shark", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Belicoso" },
+    { name: "Don Carlos", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Robusto" },
+    { name: "Don Carlos Eye of the Bull", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Torpedo" },
+    { name: "Don Carlos Eye of the Shark", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Belicoso" },
+    { name: "Don Carlos Personal Reserve", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Robusto" },
+    { name: "Hemingway Short Story", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Perfecto" },
+    { name: "Hemingway Best Seller", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Perfecto" },
+    { name: "Hemingway Signature", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Perfecto" },
+    { name: "Hemingway Classic", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Perfecto" },
+    { name: "Hemingway Work of Art", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Perfecto" },
+    { name: "Hemingway Untold Story", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Perfecto" },
+    { name: "Hemingway Signature Maduro", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Perfecto" },
+    { name: "Hemingway Classic Sun Grown", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Perfecto" },
+    { name: "Añejo No. 48", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "Añejo No. 50", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+    { name: "Añejo No. 55", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Belicoso" },
+    { name: "Añejo No. 77 Shark", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Belicoso" },
+    { name: "Añejo No. 46", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Corona" },
+    { name: "Chateau Fuente", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Robusto" },
+    { name: "Chateau Fuente Sun Grown", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Chateau Fuente Maduro", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "Gran Reserva", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Churchill" },
+    { name: "Gran Reserva Maduro", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Churchill" },
+    { name: "8-5-8 Natural", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Lonsdale" },
+    { name: "8-5-8 Maduro", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Lonsdale" },
+    { name: "Rosado Sungrown", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Rare Pink", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Perfecto" },
+    { name: "Especiales Natural", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Lonsdale" },
+    { name: "Between The Lines", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+    { name: "Casa Fuente", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Robusto" },
+    { name: "Royal Salute Sun Grown", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Churchill" },
+    { name: "Fuente Fuente OpusX Forbidden Pasion", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Perfecto" },
+  ],
+
+  "Padrón": [
+    { name: "1926 Serie No. 1 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Churchill" },
+    { name: "1926 Serie No. 1 Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Churchill" },
+    { name: "1926 Serie No. 2 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Belicoso" },
+    { name: "1926 Serie No. 2 Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Belicoso" },
+    { name: "1926 Serie No. 6 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "1926 Serie No. 6 Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Toro" },
+    { name: "1926 Serie No. 9 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "1926 Serie No. 9 Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Robusto" },
+    { name: "1926 Serie No. 35 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Corona" },
+    { name: "1926 Serie No. 35 Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Corona" },
+    { name: "1926 Serie 40th Anniversary Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Torpedo" },
+    { name: "1926 Serie 40th Anniversary Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Torpedo" },
+    { name: "1926 Serie 80th Anniversary Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Perfecto" },
+    { name: "1926 Serie 80th Anniversary Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Perfecto" },
+    { name: "1964 Anniversary Torpedo Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Torpedo" },
+    { name: "1964 Anniversary Torpedo Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Torpedo" },
+    { name: "1964 Anniversary Exclusivo Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Box-Pressed Robusto" },
+    { name: "1964 Anniversary Exclusivo Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Box-Pressed Robusto" },
+    { name: "1964 Anniversary Imperial Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Churchill" },
+    { name: "1964 Anniversary Imperial Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Churchill" },
+    { name: "1964 Anniversary Hermoso Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Corona" },
+    { name: "Family Reserve No. 45 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Family Reserve No. 45 Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Toro" },
+    { name: "Family Reserve No. 46 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Family Reserve No. 50 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Churchill" },
+    { name: "Family Reserve No. 85 Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Gordo" },
+    { name: "Family Reserve No. 95 Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Box-Pressed Toro" },
+    { name: "Damaso No. 15", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Corona" },
+    { name: "Damaso No. 17", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Churchill" },
+    { name: "Damaso No. 32", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Toro" },
+    { name: "Series 2000 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Series 2000 Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Robusto" },
+    { name: "Series 3000 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Series 3000 Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Robusto" },
+    { name: "Series 4000 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Series 4000 Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Toro" },
+    { name: "Series 5000 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Belicoso" },
+    { name: "Series 6000 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Torpedo" },
+    { name: "Series 6000 Maduro", origin: "Nicaragua", wrapper: "Maduro", vitola: "Torpedo" },
+    { name: "Series 7000 Natural", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Churchill" },
+    { name: "Padrón 60th Anniversary", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Gordo" },
+  ],
+
+  "Oliva": [
+    { name: "Serie V Melanio Figurado", origin: "Nicaragua", wrapper: "Ecuador Sumatra", vitola: "Figurado" },
+    { name: "Serie V Melanio Toro", origin: "Nicaragua", wrapper: "Ecuador Sumatra", vitola: "Toro" },
+    { name: "Serie V Melanio Robusto", origin: "Nicaragua", wrapper: "Ecuador Sumatra", vitola: "Robusto" },
+    { name: "Serie V Melanio Churchill", origin: "Nicaragua", wrapper: "Ecuador Sumatra", vitola: "Churchill" },
+    { name: "Serie V Melanio Lancero", origin: "Nicaragua", wrapper: "Ecuador Sumatra", vitola: "Lancero" },
+    { name: "Serie V Melanio Petite Corona", origin: "Nicaragua", wrapper: "Ecuador Sumatra", vitola: "Petit Corona" },
+    { name: "Serie V Melanio Maduro Robusto", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+    { name: "Serie V Melanio Maduro Toro", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Toro" },
+    { name: "Serie V Figurado", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Figurado" },
+    { name: "Serie V Toro", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Serie V Robusto", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Serie V Lancero", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Lancero" },
+    { name: "Serie V Double Toro", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Gordo" },
+    { name: "Serie O Robusto", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Serie O Toro", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Serie O Churchill", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Churchill" },
+    { name: "Serie O Double Toro", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Gordo" },
+    { name: "Serie G Robusto", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Master Blends 3", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Connecticut Reserve Robusto", origin: "Nicaragua", wrapper: "Connecticut Shade", vitola: "Robusto" },
+    { name: "Connecticut Reserve Toro", origin: "Nicaragua", wrapper: "Connecticut Shade", vitola: "Toro" },
+    { name: "Connecticut Reserve Churchill", origin: "Nicaragua", wrapper: "Connecticut Shade", vitola: "Churchill" },
+    { name: "Cain F Toro", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Cain Habano", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Cain Maduro", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Toro" },
+  ],
+
+  "My Father Cigars": [
+    { name: "Le Bijou 1922 Torpedo", origin: "Nicaragua", wrapper: "Habano Oscuro", vitola: "Torpedo" },
+    { name: "Le Bijou 1922 Robusto", origin: "Nicaragua", wrapper: "Habano Oscuro", vitola: "Robusto" },
+    { name: "Le Bijou 1922 Toro", origin: "Nicaragua", wrapper: "Habano Oscuro", vitola: "Toro" },
+    { name: "Le Bijou 1922 Gordo", origin: "Nicaragua", wrapper: "Habano Oscuro", vitola: "Gordo" },
+    { name: "Le Bijou 1922 Grand Robusto", origin: "Nicaragua", wrapper: "Habano Oscuro", vitola: "Robusto" },
+    { name: "The Judge Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "The Judge Gordo", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Gordo" },
+    { name: "The Judge Gran Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "My Father No. 1", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Churchill" },
+    { name: "My Father No. 2", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "My Father No. 4", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "My Father Flor de Las Antillas Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "My Father Flor de Las Antillas Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "My Father Flor de Las Antillas Gordo", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Gordo" },
+    { name: "La Opulencia Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "La Opulencia Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "El Centurion Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "El Centurion Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+  ],
+
+  "Drew Estate": [
+    { name: "Liga Privada No. 9 Robusto", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "Liga Privada No. 9 Toro", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+    { name: "Liga Privada No. 9 Churchill", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Churchill" },
+    { name: "Liga Privada No. 9 Corona Viva", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Corona" },
+    { name: "Liga Privada No. 9 Lancero", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Lancero" },
+    { name: "Liga Privada T52 Robusto", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "Liga Privada T52 Toro", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+    { name: "Liga Privada T52 Lancero", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Lancero" },
+    { name: "Undercrown Shade Robusto", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "Undercrown Shade Toro", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Toro" },
+    { name: "Undercrown Shade Gran Toro", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Gordo" },
+    { name: "Undercrown Maduro Robusto", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "Undercrown Maduro Toro", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+    { name: "Undercrown Sun Grown Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Undercrown Sun Grown Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "MUWAT Robusto", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "MUWAT Flying Pig", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Perfecto" },
+    { name: "Herrera Estelí Robusto Especial", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Herrera Estelí Toro Especial", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Herrera Estelí Norteño Robusto", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "20 Acre Farm Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "ACID Kuba Kuba", origin: "Nicaragua", wrapper: "Sumatran", vitola: "Robusto" },
+    { name: "ACID Blondie", origin: "Nicaragua", wrapper: "Connecticut Shade", vitola: "Petit Corona" },
+    { name: "ACID Toast", origin: "Nicaragua", wrapper: "Connecticut Shade", vitola: "Corona" },
+    { name: "ACID 1400cc", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+  ],
+
+  "Davidoff": [
+    { name: "Aniversario No. 1", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Lancero" },
+    { name: "Aniversario No. 2", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Churchill" },
+    { name: "Aniversario No. 3", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Toro" },
+    { name: "Aniversario Special R", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "702 Series Aniversario No. 3", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "702 Series Special R", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "702 Series Special T", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Torpedo" },
+    { name: "Winston Churchill Original", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Churchill" },
+    { name: "Winston Churchill Toro", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Winston Churchill Robusto", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Winston Churchill The Late Hour", origin: "Dominican Republic", wrapper: "Oscuro Maduro", vitola: "Toro" },
+    { name: "Signature No. 1", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Lancero" },
+    { name: "Signature No. 2", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Panatela" },
+    { name: "Signature 2000", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Petit Corona" },
+    { name: "Nicaragua Robusto", origin: "Dominican Republic", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Nicaragua Toro", origin: "Dominican Republic", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Nicaragua Box-Pressed Robusto", origin: "Dominican Republic", wrapper: "Habano Nicaragua", vitola: "Box-Pressed Robusto" },
+    { name: "Escurio Robusto", origin: "Dominican Republic", wrapper: "Brazilian Mata Fina", vitola: "Robusto" },
+    { name: "Escurio Gran Toro", origin: "Dominican Republic", wrapper: "Brazilian Mata Fina", vitola: "Gordo" },
+    { name: "Yamasá Robusto", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Yamasá Churchill", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Churchill" },
+    { name: "Millennium Blend Robusto", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "Millennium Blend Toro", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Toro" },
+  ],
+
+  "Ashton": [
+    { name: "VSG Robusto", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "VSG Toro", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "VSG Churchill", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Churchill" },
+    { name: "VSG Torpedo", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Torpedo" },
+    { name: "VSG Wizard", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Figurado" },
+    { name: "ESG Robusto", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Cabinet Selection No. 1", origin: "Dominican Republic", wrapper: "Connecticut Shade", vitola: "Churchill" },
+    { name: "Cabinet Selection No. 2", origin: "Dominican Republic", wrapper: "Connecticut Shade", vitola: "Toro" },
+    { name: "Cabinet Selection No. 6", origin: "Dominican Republic", wrapper: "Connecticut Shade", vitola: "Lonsdale" },
+    { name: "Cabinet Selection No. 8", origin: "Dominican Republic", wrapper: "Connecticut Shade", vitola: "Corona" },
+    { name: "Heritage Robusto", origin: "Dominican Republic", wrapper: "Connecticut Shade", vitola: "Robusto" },
+    { name: "Heritage Churchill", origin: "Dominican Republic", wrapper: "Connecticut Shade", vitola: "Churchill" },
+    { name: "Aged Maduro No. 10", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Churchill" },
+    { name: "Aged Maduro No. 20", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+    { name: "Aged Maduro No. 40", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "Classic No. 20", origin: "Dominican Republic", wrapper: "Connecticut Shade", vitola: "Toro" },
+    { name: "Classic Robusto", origin: "Dominican Republic", wrapper: "Connecticut Shade", vitola: "Robusto" },
+    { name: "Classic Churchill", origin: "Dominican Republic", wrapper: "Connecticut Shade", vitola: "Churchill" },
+  ],
+
+  "Rocky Patel": [
+    { name: "Vintage 1990 Robusto", origin: "Honduras", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "Vintage 1990 Toro", origin: "Honduras", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+    { name: "Vintage 1992 Robusto", origin: "Honduras", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Vintage 1992 Toro", origin: "Honduras", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Vintage 1999 Robusto", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "The Edge Robusto", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "The Edge Toro", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "The Edge Maduro Robusto", origin: "Honduras", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "Fifteenth Anniversary Robusto", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Fifteenth Anniversary Toro", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "A.L.R. Robusto", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "A.L.R. Toro", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Sun Grown Robusto", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Sun Grown Toro", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "1961 Robusto", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Hamlet 2000 Toro", origin: "Honduras", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+    { name: "Number 6 Toro", origin: "Honduras", wrapper: "Corojo Honduras", vitola: "Toro" },
+  ],
+
+  "AJ Fernandez": [
+    { name: "New World Robusto", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+    { name: "New World Toro", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Toro" },
+    { name: "New World Churchill", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Churchill" },
+    { name: "New World Connecticut Robusto", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "Enclave Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Enclave Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Enclave Churchill", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Churchill" },
+    { name: "Bellas Artes Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Bellas Artes Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "San Lotano Oval Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "San Lotano Connecticut Toro", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Toro" },
+    { name: "Last Call Robusto", origin: "Nicaragua", wrapper: "Pennsylvania Broadleaf Maduro", vitola: "Robusto" },
+    { name: "Last Call Toro", origin: "Nicaragua", wrapper: "Pennsylvania Broadleaf Maduro", vitola: "Toro" },
+    { name: "Aging Room Quattro Nicaragua Sonata", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Concerto" },
+    { name: "Aging Room Quattro F55 Maestro", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Toro" },
+  ],
+
+  "Perdomo": [
+    { name: "10th Anniversary Champagne Robusto", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "10th Anniversary Champagne Toro", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Toro" },
+    { name: "10th Anniversary Maduro Robusto", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+    { name: "10th Anniversary Maduro Toro", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Toro" },
+    { name: "Lot 23 Robusto", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Lot 23 Toro", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Reserve Champagne Robusto", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "Reserve Sun Grown Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Reserve Maduro Robusto", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+    { name: "Habano Robusto", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Habano Toro", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Perdomo 20th Anniversary Connecticut", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Toro" },
+    { name: "Perdomo 20th Anniversary Sun Grown", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Perdomo 20th Anniversary Maduro", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Toro" },
+  ],
+
+  "Aganorsa Leaf": [
+    { name: "Supreme Leaf Robusto", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Robusto" },
+    { name: "Supreme Leaf Toro", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Toro" },
+    { name: "Aniversario Connecticut Toro", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Toro" },
+    { name: "Aniversario Habano Toro", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Swamp Thang Lancero", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Lancero" },
+    { name: "Swamp Thang Toro", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Toro" },
+    { name: "JFR Lunatic Toro", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "JFR Lunatic Gordo", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Gordo" },
+    { name: "Rare & Limitada", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Robusto" },
+  ],
+
+  "Crowned Heads": [
+    { name: "Four Kicks Robusto", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Four Kicks Toro", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Four Kicks Churchill", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Churchill" },
+    { name: "Four Kicks Lonsdale", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Lonsdale" },
+    { name: "Four Kicks Maduro Robusto", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "Headley Grange Robusto", origin: "Dominican Republic", wrapper: "Ecuador Sumatra", vitola: "Robusto" },
+    { name: "Headley Grange Toro", origin: "Dominican Republic", wrapper: "Ecuador Sumatra", vitola: "Toro" },
+    { name: "Headley Grange Lancero", origin: "Dominican Republic", wrapper: "Ecuador Sumatra", vitola: "Lancero" },
+    { name: "Jericho Hill OBS", origin: "Dominican Republic", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+    { name: "Jericho Hill Willy Lee", origin: "Dominican Republic", wrapper: "San Andrés Maduro", vitola: "Gordo" },
+    { name: "Jericho Hill LBV", origin: "Dominican Republic", wrapper: "San Andrés Maduro", vitola: "Lancero" },
+    { name: "Las Calaveras Robusto", origin: "Honduras", wrapper: "Cameroon", vitola: "Robusto" },
+    { name: "Las Calaveras Toro", origin: "Honduras", wrapper: "Cameroon", vitola: "Toro" },
+    { name: "The Angel's Anvil Robusto", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "The Angel's Anvil Toro", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "J.D. Howard Reserve Robusto", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "Le Careme Robusto", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "Juarez Robusto", origin: "Dominican Republic", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+  ],
+
+  "Tatuaje": [
+    { name: "Reserva SW Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Reserva SW Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Black Label Miami Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Black Label Miami Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Tattoo Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "La Verite Toro", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+    { name: "Miami Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Monster Series Frank", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Perfecto" },
+    { name: "Pork Torpedo", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Torpedo" },
+    { name: "10th Anniversary Capa Especial", origin: "Nicaragua", wrapper: "Ecuador Sumatra", vitola: "Lonsdale" },
+  ],
+
+  "Illusione": [
+    { name: "~88~", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Robusto" },
+    { name: "~888~", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Toro" },
+    { name: "Singulares", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Petit Corona" },
+    { name: "Fume d'Amour", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Lancero" },
+    { name: "Epernay", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Churchill" },
+    { name: "Rothchildes", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Rothschild" },
+    { name: "Holy Lance", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Lancero" },
+    { name: "MDHK", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Robusto" },
+    { name: "Cruzados", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Toro" },
+    { name: "Original Documents MX2", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+    { name: "Garagiste", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Robusto" },
+    { name: "Group of Five Robusto", origin: "Nicaragua", wrapper: "Criollo Nicaragua", vitola: "Robusto" },
+  ],
+
+  "RoMa Craft Tobac": [
+    { name: "CroMagnon Anthropus", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+    { name: "CroMagnon Cranium", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Churchill" },
+    { name: "CroMagnon EMH Fomorian", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Gordo" },
+    { name: "Intemperance EC18 Injustice", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Intemperance BA XXI Gluttony", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Neanderthal SGP", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Torpedo" },
+    { name: "Maestranza Robusto", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+    { name: "Porthos Gran Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+  ],
+
+  "E.P. Carrillo": [
+    { name: "Encore Celestial Toro", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Encore Majestic", origin: "Dominican Republic", wrapper: "Ecuador Sumatra", vitola: "Toro" },
+    { name: "La Historia EH Robusto", origin: "Dominican Republic", wrapper: "Ecuador Sumatra", vitola: "Robusto" },
+    { name: "La Historia E-III Toro", origin: "Dominican Republic", wrapper: "Ecuador Sumatra", vitola: "Toro" },
+    { name: "Pledge Apogee Robusto", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "Pledge Prequel Toro", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Toro" },
+    { name: "New Wave Connecticut Robusto", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "Inch No. 64 Gordo", origin: "Dominican Republic", wrapper: "Ecuador Sumatra", vitola: "Gordo" },
+    { name: "Inch Maduro No. 64", origin: "Dominican Republic", wrapper: "San Andrés Maduro", vitola: "Gordo" },
+    { name: "Allegiance Toro", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Allegiance Confidant Toro", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Toro" },
+  ],
+
+  "Warped Cigars": [
+    { name: "El Oso Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "El Oso Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Chinchalle", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "La Colmena No. 44", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Petit Corona" },
+    { name: "Sky Flower", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Lancero" },
+    { name: "Futuro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Maestro del Tiempo 6102", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+    { name: "Señor Esteli", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+  ],
+
+  "Caldwell Cigar Co.": [
+    { name: "Long Live the King Robusto", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Robusto" },
+    { name: "Long Live the King Toro", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Toro" },
+    { name: "Long Live the Queen Toro", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Toro" },
+    { name: "Eastern Standard Toro", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Eastern Standard Midnight Express", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+    { name: "All Out Kings Robusto", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+    { name: "The King is Dead Robusto", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "Anastasia Toro", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Toro" },
+  ],
+
+  "Plasencia": [
+    { name: "Alma Fuerte Robustus Magnus", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Alma Fuerte Toro Quinto", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Alma Fuerte Churchill El Gran Conde", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Churchill" },
+    { name: "Alma Fuerte Nestor IV", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Gordo" },
+    { name: "Alma del Campo Robusto", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "Cosecha 149 Toro", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Cosecha 151 Toro", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Toro" },
+    { name: "Reserva Original Robusto", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Robusto" },
+    { name: "Reserva Original Toro", origin: "Nicaragua", wrapper: "Corojo Nicaragua", vitola: "Toro" },
+  ],
+
+  "Joya de Nicaragua": [
+    { name: "Antaño 1970 Robusto", origin: "Nicaragua", wrapper: "Criollo Nicaragua", vitola: "Robusto" },
+    { name: "Antaño 1970 Churchill", origin: "Nicaragua", wrapper: "Criollo Nicaragua", vitola: "Churchill" },
+    { name: "Antaño Gran Consul", origin: "Nicaragua", wrapper: "Criollo Nicaragua", vitola: "Churchill" },
+    { name: "Clasico Robusto", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Clasico Churchill", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Churchill" },
+    { name: "Cabinetta Robusto", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Joya Red Robusto", origin: "Nicaragua", wrapper: "Habano Nicaragua", vitola: "Robusto" },
+    { name: "Joya Black Toro", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Toro" },
+    { name: "Joya Silver Robusto", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+  ],
+
+  "La Flor Dominicana": [
+    { name: "Andalusian Bull", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Perfecto" },
+    { name: "Double Ligero DL 700 Torpedo", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Torpedo" },
+    { name: "Double Ligero DL 654 Robusto", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Aire Fresco Lancero", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Lancero" },
+    { name: "Ligero Robusto", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Ligero Cabinet Robusto", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "El Jocko Loco Toro", origin: "Dominican Republic", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+    { name: "Cameroon Cabinet Robusto", origin: "Dominican Republic", wrapper: "Cameroon", vitola: "Robusto" },
+  ],
+
+  "Alec Bradley": [
+    { name: "Prensado Robusto", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Prensado Toro", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Prensado Gran Toro", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Gordo" },
+    { name: "American Classic Robusto", origin: "Honduras", wrapper: "Connecticut Shade", vitola: "Robusto" },
+    { name: "American Classic Toro", origin: "Honduras", wrapper: "Connecticut Shade", vitola: "Toro" },
+    { name: "Medalist Toro", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Black Market Robusto", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Black Market Toro", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Black Market Filthy Hooligan", origin: "Honduras", wrapper: "Barber Pole (Candela / Maduro)", vitola: "Toro" },
+    { name: "Tempus Robusto", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Robusto" },
+  ],
+
+  "Camacho": [
+    { name: "American Barrel-Aged Robusto", origin: "Honduras", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "Corojo Robusto", origin: "Honduras", wrapper: "Corojo Honduras", vitola: "Robusto" },
+    { name: "Corojo Churchill", origin: "Honduras", wrapper: "Corojo Honduras", vitola: "Churchill" },
+    { name: "Ecuador Robusto", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Ecuador Toro", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Triple Maduro Robusto", origin: "Honduras", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "BXP Robusto", origin: "Honduras", wrapper: "Corojo Honduras", vitola: "Box-Pressed Robusto" },
+    { name: "Liberty Series", origin: "Honduras", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+  ],
+
+  "Macanudo": [
+    { name: "Café Hyde Park", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Churchill" },
+    { name: "Café Prince of Wales", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Lonsdale" },
+    { name: "Café Portofino", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Lancero" },
+    { name: "Café Robusto", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "Café Gigante", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Gordo" },
+    { name: "Inspirado White Connecticut Robusto", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "Inspirado Orange Habano Robusto", origin: "Dominican Republic", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Inspirado Black Oscuro Robusto", origin: "Dominican Republic", wrapper: "Habano Oscuro", vitola: "Robusto" },
+    { name: "Inspirado Green Candela Robusto", origin: "Dominican Republic", wrapper: "Candela", vitola: "Robusto" },
+    { name: "Montecristo No. 2", origin: "Dominican Republic", wrapper: "Ecuador Connecticut Shade", vitola: "Torpedo" },
+  ],
+
+  "Montecristo (Cuban)": [
+    { name: "No. 2", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Torpedo" },
+    { name: "No. 4", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Petit Corona" },
+    { name: "Edmundo", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Open Eagle", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Gordo" },
+    { name: "Linea 1935 Dumas", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Linea 1935 Leyenda", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Perfecto" },
+    { name: "Petit Edmundo", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Robusto" },
+  ],
+
+  "Cohiba (Cuban)": [
+    { name: "Siglo VI", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Gordo" },
+    { name: "Siglo I", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Petit Corona" },
+    { name: "Siglo II", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Corona" },
+    { name: "Siglo III", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Lonsdale" },
+    { name: "Siglo IV", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Siglo V", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Churchill" },
+    { name: "Behike 52", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Behike 54", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Behike 56", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Gordo" },
+    { name: "Robustos", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Esplendidos", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Churchill" },
+    { name: "Lanceros", origin: "Cuba", wrapper: "Habano Ecuador", vitola: "Lancero" },
+  ],
+
+  "Dunbarton Tobacco & Trust": [
+    { name: "Sin Compromiso Seleccion No. 11", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Sobremesa Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Sobremesa Brûlée", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+    { name: "Red Meat Lovers Club Toro", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Toro" },
+    { name: "Todos Las Dias Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Muestra de Saka Nacatamale", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+  ],
+
+  "Espinosa Cigars": [
+    { name: "Las 6 Provincias Robusto", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+    { name: "601 Blue Label Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "601 Red Label Robusto", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "601 La Bomba Atomic Toro", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Toro" },
+    { name: "Crema No. 7 Robusto", origin: "Nicaragua", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+    { name: "Laranja Reserva Robusto", origin: "Nicaragua", wrapper: "Brazilian Mata Fina", vitola: "Robusto" },
+  ],
+
+  "ADVentura": [
+    { name: "The Navigator Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Royal Return King Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "The Explorer Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Barbarroja's Invasion Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Blue Eyed Jack's Revenge Toro", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+  ],
+
+  "CAO": [
+    { name: "Flathead V660 Big Block", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Gordo" },
+    { name: "Flathead V554 Carb", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Brazilia Gol!", origin: "Brazil", wrapper: "Brazilian Mata Fina", vitola: "Toro" },
+    { name: "America Toro", origin: "Nicaragua", wrapper: "Barber Pole (Candela / Maduro)", vitola: "Toro" },
+    { name: "MX2 Robusto", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+    { name: "Guatemala Maduro Robusto", origin: "Honduras", wrapper: "San Andrés Maduro", vitola: "Robusto" },
+    { name: "Consigliere Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Cameroon Robusto", origin: "Honduras", wrapper: "Cameroon", vitola: "Robusto" },
+  ],
+
+  "Leaf by Oscar": [
+    { name: "2012 Habano Toro", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "2012 Connecticut Toro", origin: "Honduras", wrapper: "Ecuador Connecticut Shade", vitola: "Toro" },
+    { name: "2012 Maduro Toro", origin: "Honduras", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+    { name: "Sumatra Toro", origin: "Honduras", wrapper: "Ecuador Sumatra", vitola: "Toro" },
+    { name: "Maduro Toro Rustico", origin: "Honduras", wrapper: "Connecticut Broadleaf Maduro", vitola: "Toro" },
+  ],
+
+  "Asylum": [
+    { name: "13 Robusto", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "13 Toro", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "13 Gordo", origin: "Honduras", wrapper: "Habano Ecuador", vitola: "Gordo" },
+    { name: "Ogre Robusto", origin: "Honduras", wrapper: "Barber Pole (Habano / Candela)", vitola: "Robusto" },
+    { name: "Schizo Connecticut Robusto", origin: "Honduras", wrapper: "Ecuador Connecticut Shade", vitola: "Robusto" },
+  ],
+
+  "Viaje": [
+    { name: "Exclusivo Florida Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "Zombie Robusto", origin: "Nicaragua", wrapper: "Connecticut Broadleaf Maduro", vitola: "Robusto" },
+    { name: "White Label Project WLP 15", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Toro" },
+    { name: "Brotherhood Robusto", origin: "Nicaragua", wrapper: "Habano Ecuador", vitola: "Robusto" },
+    { name: "TORO TORO TORO Toro", origin: "Nicaragua", wrapper: "San Andrés Maduro", vitola: "Toro" },
+  ],
+};
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const WRAPPER_TYPES = [
@@ -15,29 +549,24 @@ const WRAPPER_TYPES = [
   "Barber Pole (Candela / Maduro)","Barber Pole (Habano / Connecticut)","Barber Pole (Habano / Candela)","Triple Wrap",
 ];
 
-const BRANDS = [
-  "Arturo Fuente","Padrón","Cohiba (Cuban)","Montecristo (Cuban)","Romeo y Julieta (Cuban)","Partagás (Cuban)",
-  "H. Upmann (Cuban)","Bolivar (Cuban)","Hoyo de Monterrey (Cuban)","Punch (Cuban)",
-  "My Father Cigars","Oliva","Perdomo","Joya de Nicaragua","Plasencia","AJ Fernandez","Aganorsa Leaf",
-  "Padrón (Nicaragua)","Drew Estate","Liga Privada","Alec Bradley","Rocky Patel","Camacho",
-  "Davidoff","Ashton","Macanudo","La Gloria Cubana","Avo","Romeo y Julieta (Dominican)",
-  "H. Upmann (Dominican)","Montecristo (Dominican)","General Cigar Co.","La Aurora","Aging Room",
-  "Punch (Honduras)","Hoyo de Monterrey (Honduras)","West Tampa Tobacco",
-  "Tatuaje","Crowned Heads","Illusione","RoMa Craft Tobac","Warped Cigars","Caldwell Cigar Co.",
-  "Black Label Trading Co.","E.P. Carrillo","Dunbarton Tobacco & Trust","ADVentura","Oscar Valladares",
-  "Viaje","Ezra Zion","CAO","Asylum","Protocol","Herrera Estelí","Leaf by Oscar","Powstanie",
-  "San Cristobal","Undercrown","Man O' War","La Flor Dominicana","Nomad Cigar Co.","Nub",
-  "Quesada Cigars","Kristoff","Gurkha","ACID (Drew Estate)","Espinosa Cigars",
+const BRANDS = Object.keys(CIGAR_DB).sort().concat([
+  "Padrón (Nicaragua)","Romeo y Julieta (Cuban)","Romeo y Julieta (Dominican)","Partagás (Cuban)",
+  "H. Upmann (Cuban)","H. Upmann (Dominican)","Bolivar (Cuban)","Hoyo de Monterrey (Cuban)","Punch (Cuban)",
+  "Montecristo (Dominican)","General Cigar Co.","La Aurora","West Tampa Tobacco","Balmoral",
+  "Punch (Honduras)","Hoyo de Monterrey (Honduras)","Camacho (Honduras)",
+  "Protocol","La Gloria Cubana","Nomad Cigar Co.","Nub","Emilio Cigars",
+  "Quesada Cigars","Kristoff","Gurkha","ACID (Drew Estate)","Baccarat","Tatiana",
   "Privada Cigar Club","Domain Cigars","El Mago Cigars","Avowed Cigars","Apostate Cigars",
-  "Wildfire Cigar Co.","Tradecraft Cigars","Deadwood Cigars","Red Meat Lovers Club",
-  "Matilde","CAIN","601","Gran Habano","Partagas (Dominican)",
-];
+  "Wildfire Cigar Co.","Tradecraft Cigars","Deadwood Cigars","CroMagnon","Craft Maquette",
+  "Fumero","Villiger","Mombacho","Matilde","CAIN","601","Gran Habano","Partagas (Dominican)",
+  "Oscar Valladares","San Cristobal","Man O' War","Nub","Powstanie","La Flor Dominicana",
+].filter(b => !CIGAR_DB[b]));
 
 const ORIGINS = ["Nicaragua","Dominican Republic","Honduras","Cuba","Ecuador","Brazil","Mexico","Panama","USA","Cameroon","Indonesia","Peru","Colombia","Costa Rica","Bolivia","Multi-Country"];
 
 const VITOLAS = [
   "Robusto","Toro","Churchill","Lancero","Belicoso","Torpedo","Gordo","Petit Corona","Corona","Panatela",
-  "Presidente","Diadema","Perfecto","Figurado","Double Corona","Gran Corona","Short Robusto",
+  "Presidente","Diadema","Perfecto","Figurado","Culebra","Double Corona","Gran Corona","Short Robusto",
   "Rothschild","Corona Extra","Lonsdale","Gran Toro","Magnum","Apollo","Concerto","Epicure",
   "Short Perfecto","Box-Pressed Toro","Box-Pressed Robusto","Salomon","Gran Pirámide",
 ];
@@ -45,21 +574,14 @@ const VITOLAS = [
 const FLAVOR_TAGS = ["Cedar","Earth","Pepper","Leather","Coffee","Cream","Nuts","Cocoa","Fruit","Floral","Spice","Toast","Honey","Herbal","Molasses","Dark Chocolate","Licorice","Raisin","Vanilla","Caramel","Cinnamon","Oak","Hay","Bread","Grass","Mineral"];
 const STATUSES = ["In Humidor","Smoked","Wishlist"];
 
-const SEED_NAMES = {
-  "Arturo Fuente":["Opus X","Don Carlos","Hemingway Short Story","Chateau Fuente","Rosado Sungrown"],
-  "Padrón":["1964 Anniversary Series","1926 Serie","Family Reserve","Damaso","Thousand Series"],
-  "Oliva":["Serie V Melanio","Serie O","Master Blends III","Cain F","Connecticut Reserve"],
-  "My Father Cigars":["Le Bijou 1922","The Judge","La Opulencia","El Centurion"],
-  "Drew Estate":["Liga Privada No. 9","Liga Privada T52","Undercrown Shade","Undercrown Maduro","MUWAT"],
-  "Davidoff":["Aniversario","Winston Churchill","702 Series","Signature","Nicaragua"],
-  "Ashton":["VSG","Cabinet Selection","Heritage","Aged Maduro","ESG"],
-  "Rocky Patel":["Vintage 1990","Vintage 1992","Edge","Sun Grown","Fifteenth Anniversary"],
-  "Tatuaje":["Reserva","Black Label","Tattoo","La Verite","Miami"],
-  "AJ Fernandez":["New World","Enclave","Bellas Artes","Last Call","San Lotano"],
-  "Crowned Heads":["Four Kicks","Jericho Hill","Headley Grange","Las Calaveras","The Angel's Anvil"],
-  "Cohiba (Cuban)":["Siglo VI","Behike","Robustos","Esplendidos","Lanceros"],
-  "Montecristo (Cuban)":["No. 2","No. 4","Edmundo","Open Eagle","Linea 1935"],
-};
+// Seed the cigar repo from our local database on first load
+function buildSeedRepo() {
+  const repo = {};
+  for (const [brand, cigars] of Object.entries(CIGAR_DB)) {
+    repo[brand] = cigars.map(c => c.name);
+  }
+  return repo;
+}
 
 const BLOCKLIST = ["fuck","shit","bitch","cunt","dick","cock","pussy","nigger","nigga","faggot","fag","retard","spic","kike","chink","whore","slut","rape","nazi","hitler"];
 
@@ -86,7 +608,7 @@ function iqrAvg(vals) {
   return f.reduce((a, b) => a + b, 0) / f.length;
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ── Styles ─────────────────────────────────────────────────────────────────────
 
 const C = {
   bg:"#0d0d0d", surface:"#1a1a1a", card:"#222222", border:"#3a3a3a",
@@ -173,7 +695,7 @@ const css = `
   .empty-sub{font-size:11px;font-weight:700;margin-top:5px;}
   .divider{border:none;border-top:1.5px solid ${C.border};margin:12px 0;}
   .filter-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
-  .fchip{padding:5px 13px;border-radius:20px;font-size:11px;font-weight:900;cursor:pointer;border:1.5px solid ${C.border};color:${C.textMuted};background:none;font-family:'Lato',sans-serif;transition:all 0.12s;}
+  .fchip{padding:5px 13px;border-radius:20px;font-size:11px;font-weight:900;cursor:pointer;border:1.5px solid ${C.border};color:${C.textMuted};background:none;font-family:'Lato',sans-serif;transition:all 0.12px;}
   .fchip.active{background:${C.card};border-color:${C.accentDim};color:${C.accent};}
   .price-ok{color:${C.success};}
   .ins-bar-bg{flex:1;background:${C.surface};border-radius:4px;height:10px;border:1px solid ${C.border};}
@@ -186,15 +708,17 @@ const css = `
   .suggestion-item:hover{background:${C.surface};}
   .suggestion-new{color:${C.accent};}
   .community-badge{font-size:9px;font-weight:900;color:${C.textDim};padding:1px 5px;border:1px solid ${C.border};border-radius:3px;}
+  .verified-badge{font-size:9px;font-weight:900;color:#52b060;padding:1px 5px;border:1px solid #52b060;border-radius:3px;}
   .new-badge{font-size:9px;font-weight:900;color:${C.accentDim};padding:1px 5px;border:1px solid ${C.accentDim};border-radius:3px;}
   .filter-err{font-size:10px;color:${C.danger};font-weight:700;margin-top:3px;}
   .flag-btn{background:none;border:none;color:${C.textDim};font-size:10px;font-weight:700;cursor:pointer;padding:0;margin-left:8px;transition:color 0.12s;}
   .flag-btn:hover{color:${C.warn};}
   .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:${C.surface};border:1.5px solid ${C.border};color:${C.text};padding:10px 20px;border-radius:8px;font-size:12px;font-weight:700;z-index:200;pointer-events:none;white-space:nowrap;}
+  .autofill-badge{font-size:9px;color:${C.success};font-weight:900;margin-left:6px;}
   .device-id{font-size:9px;color:${C.textDim};font-weight:700;margin-top:2px;font-family:monospace;}
 `;
 
-// ── App ───────────────────────────────────────────────────────────────────────
+// ── App ────────────────────────────────────────────────────────────────────────
 
 const EMPTY_CIGAR_FORM = {brand:"",vitola:"Robusto",origin:"Nicaragua",wrapper:"Connecticut Shade",qty:1,cost:"",msrp:"",status:"In Humidor",acquired:new Date().toISOString().slice(0,10)};
 const EMPTY_LOG_FORM = {cigarId:"",date:new Date().toISOString().slice(0,10),rating:8,draw:8,burn:8,flavors:[],notes:""};
@@ -207,14 +731,14 @@ export default function App() {
   const [showAddCigar, setShowAddCigar] = useState(false);
   const [showAddLog, setShowAddLog] = useState(false);
   const [toast, setToast] = useState(null);
+  const [autoFilled, setAutoFilled] = useState(false);
 
-  // Persisted state — loaded from localStorage on mount
   const [cigars, setCigarsRaw] = useState(() => local.get('cigars') || []);
   const [logs, setLogsRaw] = useState(() => local.get('logs') || []);
   const [cigarRepo, setCigarRepoRaw] = useState(() => {
+    const seed = buildSeedRepo();
     const saved = shared.get('cigar_repo') || {};
-    // Merge seed names with any saved community names
-    const merged = { ...SEED_NAMES };
+    const merged = { ...seed };
     for (const brand in saved) {
       merged[brand] = Array.from(new Set([...(merged[brand] || []), ...saved[brand]]));
     }
@@ -227,7 +751,6 @@ export default function App() {
   function setCigarRepo(v) { const val = typeof v === 'function' ? v(cigarRepo) : v; setCigarRepoRaw(val); shared.set('cigar_repo', val); }
   function setSharedMsrp(v) { const val = typeof v === 'function' ? v(sharedMsrp) : v; setSharedMsrpRaw(val); shared.set('msrp_pool', val); }
 
-  // Name field
   const [nameInput, setNameInput] = useState("");
   const [nameSuggestions, setNameSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -236,16 +759,38 @@ export default function App() {
   const [logForm, setLogForm] = useState(EMPTY_LOG_FORM);
   const fileRefs = useRef({});
 
-  // Update suggestions
   useEffect(() => {
     const brand = cigarForm.brand;
     if (!brand || !nameInput.trim()) { setNameSuggestions([]); return; }
     const pool = cigarRepo[brand] || [];
     const q = nameInput.toLowerCase();
-    setNameSuggestions(pool.filter(n => n.toLowerCase().includes(q)).slice(0, 8));
+    setNameSuggestions(pool.filter(n => n.toLowerCase().includes(q)).slice(0, 10));
   }, [nameInput, cigarForm.brand, cigarRepo]);
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(null), 2500); }
+
+  // Auto-fill form fields when a known cigar name is selected
+  function applyAutoFill(brand, cigarName) {
+    const brandCigars = CIGAR_DB[brand] || [];
+    const match = brandCigars.find(c => c.name.toLowerCase() === cigarName.toLowerCase());
+    if (match) {
+      setCigarForm(prev => ({
+        ...prev,
+        vitola: match.vitola || prev.vitola,
+        origin: match.origin || prev.origin,
+        wrapper: match.wrapper || prev.wrapper,
+      }));
+      setAutoFilled(true);
+    } else {
+      setAutoFilled(false);
+    }
+  }
+
+  function selectSuggestion(name) {
+    setNameInput(name);
+    setShowSuggestions(false);
+    applyAutoFill(cigarForm.brand, name);
+  }
 
   function submitNameToRepo(name, brand) {
     const check = filterName(name);
@@ -301,7 +846,7 @@ export default function App() {
     setCigars(p => [...p, newCigar]);
     contributeToPool(newCigar);
     setShowAddCigar(false);
-    setNameInput(""); setNameError("");
+    setNameInput(""); setNameError(""); setAutoFilled(false);
     setCigarForm(EMPTY_CIGAR_FORM);
   }
 
@@ -351,7 +896,7 @@ export default function App() {
             <>
               <div className="section-header">
                 <span className="section-title">My Collection</span>
-                <button className="btn-primary" onClick={() => { setShowAddCigar(true); setNameInput(""); setNameError(""); }}>+ Add Cigar</button>
+                <button className="btn-primary" onClick={() => { setShowAddCigar(true); setNameInput(""); setNameError(""); setAutoFilled(false); }}>+ Add Cigar</button>
               </div>
               <div className="filter-row">
                 {["All","In Humidor","Smoked","Wishlist"].map(f => (
@@ -480,38 +1025,48 @@ export default function App() {
           )}
         </div>
 
-        {/* Add Cigar Modal */}
         {showAddCigar && (
           <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddCigar(false)}>
             <div className="modal">
               <div className="modal-title">Add to Collection</div>
               <div className="form-grid">
                 <div className="fg full"><label className="form-label">Brand</label>
-                  <select className="form-input" value={cigarForm.brand} onChange={e => { setCigarForm(p => ({...p, brand: e.target.value})); setNameInput(""); setNameError(""); }}>
+                  <select className="form-input" value={cigarForm.brand} onChange={e => {
+                    setCigarForm(p => ({...EMPTY_CIGAR_FORM, brand: e.target.value}));
+                    setNameInput(""); setNameError(""); setAutoFilled(false);
+                  }}>
                     <option value="">Select a brand...</option>
                     {BRANDS.map(b => <option key={b}>{b}</option>)}
                   </select>
                 </div>
+
                 <div className="fg full">
-                  <label className="form-label">Cigar Name</label>
+                  <label className="form-label">
+                    Cigar Name
+                    {autoFilled && <span className="autofill-badge">✓ Auto-filled</span>}
+                  </label>
                   <div className="name-wrap">
                     <input
                       className="form-input"
                       placeholder={cigarForm.brand ? "Search or enter cigar name..." : "Select a brand first"}
                       disabled={!cigarForm.brand}
                       value={nameInput}
-                      onChange={e => { setNameInput(e.target.value); setShowSuggestions(true); setNameError(""); }}
+                      onChange={e => { setNameInput(e.target.value); setShowSuggestions(true); setNameError(""); setAutoFilled(false); }}
                       onFocus={() => setShowSuggestions(true)}
                       onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                       autoComplete="off"
                     />
                     {showSuggestions && cigarForm.brand && (nameSuggestions.length > 0 || nameInput.trim()) && (
                       <div className="suggestions">
-                        {nameSuggestions.map(n => (
-                          <div key={n} className="suggestion-item" onMouseDown={() => { setNameInput(n); setShowSuggestions(false); }}>
-                            <span>{n}</span><span className="community-badge">COMMUNITY</span>
-                          </div>
-                        ))}
+                        {nameSuggestions.map(n => {
+                          const isVerified = (CIGAR_DB[cigarForm.brand] || []).some(c => c.name === n);
+                          return (
+                            <div key={n} className="suggestion-item" onMouseDown={() => selectSuggestion(n)}>
+                              <span>{n}</span>
+                              <span className={isVerified ? "verified-badge" : "community-badge"}>{isVerified ? "VERIFIED" : "COMMUNITY"}</span>
+                            </div>
+                          );
+                        })}
                         {nameInput.trim() && !nameSuggestions.map(n => n.toLowerCase()).includes(nameInput.trim().toLowerCase()) && (
                           <div className="suggestion-item suggestion-new" onMouseDown={() => setShowSuggestions(false)}>
                             <span>Submit "{nameInput.trim()}" as new</span><span className="new-badge">NEW</span>
@@ -522,6 +1077,7 @@ export default function App() {
                   </div>
                   {nameError && <div className="filter-err">{nameError}</div>}
                 </div>
+
                 <div className="fg"><label className="form-label">Vitola</label><select className="form-input" value={cigarForm.vitola} onChange={e => setCigarForm(p => ({...p, vitola: e.target.value}))}>{VITOLAS.map(v => <option key={v}>{v}</option>)}</select></div>
                 <div className="fg"><label className="form-label">Origin</label><select className="form-input" value={cigarForm.origin} onChange={e => setCigarForm(p => ({...p, origin: e.target.value}))}>{ORIGINS.map(o => <option key={o}>{o}</option>)}</select></div>
                 <div className="fg full"><label className="form-label">Wrapper</label><select className="form-input" value={cigarForm.wrapper} onChange={e => setCigarForm(p => ({...p, wrapper: e.target.value}))}>{WRAPPER_TYPES.map(w => <option key={w}>{w}</option>)}</select></div>
@@ -539,7 +1095,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Add Log Modal */}
         {showAddLog && (
           <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddLog(false)}>
             <div className="modal">
